@@ -91,7 +91,14 @@ class action_plugin_highlightparent extends DokuWiki_Action_Plugin {
             global $conf;
             $baseID = $matches[1];
             if (substr($baseID, -1) === ':') {
-                $baseID .= $conf['start'];
+				# ++bgoff
+				if (page_exists($baseID . $conf['start'])) {
+					$baseID .= $conf['start'];
+				} else if (page_exists($baseID . getNS($baseID))) {
+					$baseID .= getNS($baseID);
+				}
+				/* --bgoff
+                $baseID .= $conf['start'];*/
             }
             if ($baseID === $ID) {
                 return '';
@@ -109,21 +116,47 @@ class action_plugin_highlightparent extends DokuWiki_Action_Plugin {
     protected function getStartpageOrParentStartpage()
     {
         global $ID, $conf;
+		
+		# ++bgoff
+        $ns = getNS($ID);
+        $page = noNS($ID);
+        if ($page === $conf['start'] || $page === $ns) {
+            return '';
+        }
+
+		/* --bgoff
         if ($ID === $conf['start']) {
             return '';
         }
         $ns = getNS($ID);
         $page = noNS($ID);
+		*/
 
         if ($ns === false) {
-            return ':' . $conf['start'];
+			# ++bgoff
+            return ':';
+            #return ':' . $conf['start'];
         }
 
-        if ($page !== $conf['start']) {
-            return $ns . ':' . $conf['start'];
+		# ++bgoff
+        if ($page !== $conf['start'] && $page !== $ns) {
+			if (page_exists($ns . ':' . $conf['start'])) {
+				return $ns . ':' . $conf['start'];
+			} else if (page_exists($ns . ':' . $ns)) {
+				return $ns . ':' . $ns;
+			}
         }
 
+		# ++bgoff
+        if ($page !== $ns) {
+            return $ns . ':' . $ns;
+        }
+
+		# ++bgoff
+        return getNS($ns) . ':';
+		/* --bgoff
         return getNS($ns) . ':' . $conf['start'];
+		*/
     }
 
     /**
@@ -135,7 +168,9 @@ class action_plugin_highlightparent extends DokuWiki_Action_Plugin {
      */
     protected function buildLinkToPage($baseID)
     {
-        $baseTitle = p_get_first_heading($baseID);
+		# ++bgoff 
+		$baseTitle = p_get_first_heading($baseID);
+		
         $xhtml_renderer = new Doku_Renderer_xhtml();
         $link = $xhtml_renderer->internallink($baseID, ($baseTitle ?: $baseID), false, true);
         $link = "<span id='plugin__highlightparent'>$link</span>";
